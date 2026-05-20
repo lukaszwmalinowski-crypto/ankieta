@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#174a7c" />
+    <meta
+      name="description"
+      content="Ankieta ewaluacyjna mobilności kadry Erasmus+ - Kalamata, Grecja 2026"
+    />
+    <title>Ankieta Erasmus+ Kalamata 2026</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="brand-block">
+          <img
+            class="project-logo"
+            src="assets/logoebg.png"
+            alt="Education without borders - new competences and skills of staff"
+          />
+          <div>
+            <p class="eyebrow">Erasmus+ | Kalamata, Grecja 2026</p>
+            <h1>Ankieta ewaluacyjna mobilności kadry</h1>
+          </div>
+        </div>
+        <div class="install-box">
+          <button class="ghost-button" id="installButton" type="button" hidden>Instaluj PWA</button>
+          <span class="status-pill" id="offlineStatus">Online</span>
+        </div>
+      </div>
+      <div class="progress-shell" aria-label="Postęp wypełnienia ankiety">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <p class="progress-label"><span id="progressText">0%</span> wypełnienia</p>
+    </header>
+
+    <main class="page">
+      <section class="notice">
+        <p>
+          Ankieta jest anonimowa i służy ocenie jakości organizacji, programu oraz efektów
+          mobilności kadry Erasmus+. Wyniki zostaną wykorzystane wyłącznie do celów ewaluacyjnych
+          i doskonalenia przyszłych wyjazdów.
+        </p>
+        <p>
+          Wypełnienie tej ankiety nie zastępuje obowiązku złożenia indywidualnego raportu
+          uczestnika w systemie Komisji Europejskiej.
+        </p>
+      </section>
+
+      <form id="surveyForm" autocomplete="on">
+        <section class="form-section">
+          <div class="section-heading">
+            <span>1</span>
+            <div>
+              <h2>Informacje ogólne</h2>
+              <p>Wybierz temat szkolenia oraz podstawowe informacje organizacyjne.</p>
+            </div>
+          </div>
+
+          <label class="field">
+            <span>Temat szkolenia</span>
+            <select name="trainingTopic" required>
+              <option value="">Wybierz temat</option>
+              <option>Fake news, dezinformacja i krytyczne myślenie</option>
+              <option>Efektywna komunikacja i wystąpienia publiczne</option>
+              <option>Gamifikacja i game-based learning w edukacji dorosłych</option>
+            </select>
+          </label>
+
+          <div class="two-column">
+            <label class="field">
+              <span>Data udziału / zakończenia mobilności</span>
+              <input type="date" name="mobilityDate" />
+            </label>
+            <label class="field">
+              <span>Rola uczestnika</span>
+              <input type="text" name="participantRole" placeholder="np. nauczyciel, trener, koordynator" />
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading">
+            <span>2</span>
+            <div>
+              <h2>Organizacja i logistyka</h2>
+              <p>Oceń przygotowanie i warunki realizacji wyjazdu.</p>
+            </div>
+          </div>
+          <div class="ratings" id="logisticsRatings"></div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading">
+            <span>3</span>
+            <div>
+              <h2>Cele i realizacja programu</h2>
+              <p>Oceń zgodność programu z celami i potrzebami uczestników.</p>
+            </div>
+          </div>
+          <div class="ratings" id="programRatings"></div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading">
+            <span>4</span>
+            <div>
+              <h2>Nabyte kompetencje i rezultaty</h2>
+              <p>Oceń efekty szkolenia oraz ich przydatność w pracy.</p>
+            </div>
+          </div>
+          <div class="ratings" id="resultsRatings"></div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading">
+            <span>5</span>
+            <div>
+              <h2>Upowszechnianie rezultatów i wnioski</h2>
+              <p>Opisz najważniejsze rezultaty, plany wdrożenia oraz rekomendacje.</p>
+            </div>
+          </div>
+          <div class="ratings" id="sharingRatings"></div>
+
+          <label class="field">
+            <span>Największa wartość merytoryczna mobilności</span>
+            <textarea name="value" rows="4" required></textarea>
+          </label>
+          <label class="field">
+            <span>Konkretne umiejętności do wykorzystania po powrocie</span>
+            <textarea name="skills" rows="4" required></textarea>
+          </label>
+          <label class="field">
+            <span>Sposób upowszechniania wiedzy</span>
+            <textarea name="sharingMethod" rows="4" required></textarea>
+          </label>
+          <label class="field">
+            <span>Co wymaga poprawy w przyszłości</span>
+            <textarea name="improvements" rows="4" required></textarea>
+          </label>
+        </section>
+
+        <section class="actions-panel">
+          <div>
+            <h2>Podsumowanie</h2>
+            <p id="saveStatus">Odpowiedzi zapisują się automatycznie na tym urządzeniu.</p>
+          </div>
+          <div class="actions">
+            <button class="secondary-button" id="clearButton" type="button">Wyczyść formularz</button>
+            <button class="primary-button" id="downloadPdfButton" type="button">Pobierz PDF</button>
+            <button class="primary-button muted" id="sendPdfButton" type="button">Wyślij PDF do koordynatora</button>
+          </div>
+          <p class="message" id="messageBox" role="status" aria-live="polite"></p>
+        </section>
+      </form>
+    </main>
+  </body>
+</html>
