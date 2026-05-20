@@ -1,4 +1,4 @@
-const CACHE_NAME = "erasmus-kalamata-2026-v1";
+const CACHE_NAME = "erasmus-kalamata-2026-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,10 +8,10 @@ const APP_SHELL = [
   "./assets/logoebg.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./vendor/pdfmake/pdfmake.min.js",
+  "./vendor/pdfmake/vfs_fonts.js",
 ];
-const OPTIONAL_CACHE = [
-  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
-];
+const OPTIONAL_CACHE = [];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

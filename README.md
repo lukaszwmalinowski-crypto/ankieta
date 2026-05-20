@@ -11,6 +11,7 @@ Statyczna aplikacja PWA do anonimowej ankiety ewaluacyjnej mobilności kadry Era
 - `service-worker.js` - obsługa cache i trybu offline.
 - `assets/logoebg.png` - logo projektu w nagłówku aplikacji.
 - `icons/` - ikony aplikacji.
+- `vendor/pdfmake/` - lokalna biblioteka do generowania estetycznych PDF z polskimi znakami.
 
 ## Publikacja na GitHub Pages
 
@@ -83,4 +84,4 @@ const SEND_ENDPOINT = "https://twoj-endpoint.example.com/send";
 
 ## Uwagi
 
-Biblioteka jsPDF jest ładowana z CDN. Po pierwszym otwarciu aplikacji service worker zapisuje ją w cache, aby generowanie PDF działało także offline.
+Biblioteka pdfmake jest dołączona lokalnie w katalogu `vendor/pdfmake`. Po pierwszym otwarciu aplikacji service worker zapisuje ją w cache, aby generowanie PDF działało także offline.

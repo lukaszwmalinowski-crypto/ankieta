@@ -190,7 +190,7 @@ function getPdfFileName(data) {
 }
 
 function validateForm() {
-  if (!window.jspdf) {
+  if (!window.pdfMake) {
     setMessage(
       "Moduł PDF nie jest jeszcze dostępny. Odśwież stronę po połączeniu z internetem i spróbuj ponownie.",
       "error",
@@ -203,73 +203,78 @@ function validateForm() {
   return false;
 }
 
-function addWrappedText(doc, text, x, y, maxWidth, lineHeight) {
-  const cleanText = String(text || "Brak odpowiedzi");
-  const lines = doc.splitTextToSize(cleanText, maxWidth);
-  lines.forEach((line) => {
-    if (y > 275) {
-      doc.addPage();
-      y = 22;
-    }
-    doc.text(line, x, y);
-    y += lineHeight;
+async function imageToDataUrl(src) {
+  const response = await fetch(src);
+  const blob = await response.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(blob);
   });
-  return y;
 }
 
-function addSectionTitle(doc, title, y) {
-  if (y > 260) {
-    doc.addPage();
-    y = 22;
-  }
-  doc.setFillColor(232, 243, 244);
-  doc.rect(14, y - 6, 182, 10, "F");
-  doc.setTextColor(23, 74, 124);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text(title, 18, y + 1);
-  doc.setTextColor(20, 32, 51);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  return y + 12;
+function answerText(value) {
+  return value && String(value).trim() ? String(value).trim() : "Brak odpowiedzi";
 }
 
-function buildPdf() {
+function ratingText(value) {
+  return value ? `${value} - ${scaleLabels[value]}` : "Brak odpowiedzi";
+}
+
+function sectionBlock(title, rows) {
+  return [
+    {
+      text: title,
+      style: "sectionTitle",
+      margin: [0, 18, 0, 8],
+    },
+    {
+      table: {
+        widths: ["*", 150],
+        body: rows.map(([question, answer]) => [
+          { text: question, style: "questionCell" },
+          { text: answerText(answer), style: "answerCell" },
+        ]),
+      },
+      layout: {
+        hLineColor: () => "#d9e2ec",
+        vLineColor: () => "#d9e2ec",
+        paddingLeft: () => 9,
+        paddingRight: () => 9,
+        paddingTop: () => 7,
+        paddingBottom: () => 7,
+      },
+    },
+  ];
+}
+
+function openAnswerBlock(title, answer) {
+  return {
+    margin: [0, 8, 0, 0],
+    table: {
+      widths: ["*"],
+      body: [
+        [{ text: title, style: "openQuestion" }],
+        [{ text: answerText(answer), style: "openAnswer" }],
+      ],
+    },
+    layout: {
+      hLineColor: () => "#d9e2ec",
+      vLineColor: () => "#d9e2ec",
+      paddingLeft: () => 10,
+      paddingRight: () => 10,
+      paddingTop: () => 8,
+      paddingBottom: () => 8,
+    },
+  };
+}
+
+async function buildPdfDefinition() {
   const data = getFormData();
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
   const generatedAt = new Date().toLocaleString("pl-PL");
-  const maxWidth = 176;
-  let y = 20;
-
-  doc.setFillColor(23, 74, 124);
-  doc.rect(0, 0, 210, 30, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
-  y = addWrappedText(
-    doc,
-    "Ankieta ewaluacyjna mobilności kadry Erasmus+ - Kalamata, Grecja 2026",
-    14,
-    13,
-    182,
-    6,
-  );
-
-  y = 42;
-  doc.setTextColor(20, 32, 51);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`Data wygenerowania: ${generatedAt}`, 14, y);
-  y += 7;
-  doc.text(`Temat szkolenia: ${data.trainingTopic || "Brak odpowiedzi"}`, 14, y);
-  y += 7;
-  doc.text(`Średnia ocen z pytań zamkniętych: ${getAverageRating(data)}`, 14, y);
-  y += 12;
-
-  y = addSectionTitle(doc, "Informacje ogólne", y);
-  y = addQuestion(doc, "Data udziału / zakończenia mobilności", data.mobilityDate, y);
-  y = addQuestion(doc, "Rola uczestnika", data.participantRole, y);
+  const averageRating = getAverageRating(data);
+  const logoDataUrl = await imageToDataUrl("assets/logoebg.png");
 
   const sections = [
     ["Organizacja i logistyka", ratingGroups[0].items],
@@ -278,52 +283,147 @@ function buildPdf() {
     ["Upowszechnianie rezultatów i wnioski", ratingGroups[3].items],
   ];
 
+  const content = [
+    {
+      columns: [
+        logoDataUrl
+          ? { image: logoDataUrl, width: 168, margin: [0, 0, 20, 0] }
+          : { text: "Education without borders", style: "logoFallback" },
+        {
+          width: "*",
+          stack: [
+            { text: "Ankieta ewaluacyjna mobilności kadry Erasmus+", style: "title" },
+            { text: "Kalamata, Grecja 2026", style: "subtitle" },
+          ],
+        },
+      ],
+      columnGap: 18,
+      margin: [0, 0, 0, 18],
+    },
+    {
+      canvas: [{ type: "line", x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: "#d9e2ec" }],
+      margin: [0, 0, 0, 14],
+    },
+    {
+      table: {
+        widths: ["*", "*", 95],
+        body: [
+          [
+            { text: "Data wygenerowania", style: "metaLabel" },
+            { text: "Temat szkolenia", style: "metaLabel" },
+            { text: "Średnia ocen", style: "metaLabel" },
+          ],
+          [
+            { text: generatedAt, style: "metaValue" },
+            { text: answerText(data.trainingTopic), style: "metaValue" },
+            { text: averageRating, style: "scoreValue" },
+          ],
+        ],
+      },
+      layout: {
+        fillColor: (rowIndex) => (rowIndex === 0 ? "#e8f3f4" : "#ffffff"),
+        hLineColor: () => "#c8d5e2",
+        vLineColor: () => "#c8d5e2",
+        paddingLeft: () => 9,
+        paddingRight: () => 9,
+        paddingTop: () => 8,
+        paddingBottom: () => 8,
+      },
+      margin: [0, 0, 0, 10],
+    },
+    ...sectionBlock("Informacje ogólne", [
+      ["Data udziału / zakończenia mobilności", data.mobilityDate],
+      ["Rola uczestnika", data.participantRole],
+    ]),
+  ];
+
   sections.forEach(([title, items]) => {
-    y = addSectionTitle(doc, title, y + 2);
-    items.forEach(([name, question]) => {
-      const value = data[name] ? `${data[name]} - ${scaleLabels[data[name]]}` : "Brak odpowiedzi";
-      y = addQuestion(doc, question, value, y);
-    });
+    content.push(
+      ...sectionBlock(
+        title,
+        items.map(([name, question]) => [question, ratingText(data[name])]),
+      ),
+    );
   });
 
-  y = addSectionTitle(doc, "Pytania otwarte", y + 2);
-  y = addQuestion(doc, "Największa wartość merytoryczna mobilności", data.value, y);
-  y = addQuestion(doc, "Konkretne umiejętności do wykorzystania po powrocie", data.skills, y);
-  y = addQuestion(doc, "Sposób upowszechniania wiedzy", data.sharingMethod, y);
-  addQuestion(doc, "Co wymaga poprawy w przyszłości", data.improvements, y);
+  content.push(
+    { text: "Pytania otwarte", style: "sectionTitle", margin: [0, 18, 0, 8] },
+    openAnswerBlock("Największa wartość merytoryczna mobilności", data.value),
+    openAnswerBlock("Konkretne umiejętności do wykorzystania po powrocie", data.skills),
+    openAnswerBlock("Sposób upowszechniania wiedzy", data.sharingMethod),
+    openAnswerBlock("Co wymaga poprawy w przyszłości", data.improvements),
+  );
 
-  const pageCount = doc.getNumberOfPages();
-  for (let page = 1; page <= pageCount; page += 1) {
-    doc.setPage(page);
-    doc.setFontSize(8);
-    doc.setTextColor(95, 111, 132);
-    doc.text(`Strona ${page} z ${pageCount}`, 174, 289);
-  }
+  const docDefinition = {
+    pageSize: "A4",
+    pageMargins: [40, 36, 40, 42],
+    info: {
+      title: "Ankieta ewaluacyjna mobilności kadry Erasmus+ - Kalamata, Grecja 2026",
+      author: "Education without borders",
+      subject: answerText(data.trainingTopic),
+    },
+    footer: (currentPage, pageCount) => ({
+      columns: [
+        { text: "Erasmus+ | Kalamata, Grecja 2026", alignment: "left" },
+        { text: `Strona ${currentPage} z ${pageCount}`, alignment: "right" },
+      ],
+      margin: [40, 0],
+      fontSize: 8,
+      color: "#5f6f84",
+    }),
+    content,
+    defaultStyle: {
+      font: "Roboto",
+      fontSize: 9,
+      color: "#142033",
+      lineHeight: 1.18,
+    },
+    styles: {
+      title: { fontSize: 18, bold: true, color: "#174a7c", margin: [0, 8, 0, 4] },
+      subtitle: { fontSize: 12, bold: true, color: "#0c7b83" },
+      logoFallback: { fontSize: 12, bold: true, color: "#174a7c" },
+      metaLabel: { bold: true, color: "#174a7c", fontSize: 8 },
+      metaValue: { color: "#142033", fontSize: 9 },
+      scoreValue: { color: "#174a7c", fontSize: 15, bold: true, alignment: "center" },
+      sectionTitle: {
+        fontSize: 12,
+        bold: true,
+        color: "#ffffff",
+        fillColor: "#174a7c",
+        margin: [0, 0, 0, 0],
+      },
+      questionCell: { bold: true, color: "#142033" },
+      answerCell: { color: "#334155" },
+      openQuestion: { bold: true, color: "#174a7c", fillColor: "#e8f3f4" },
+      openAnswer: { color: "#334155", minHeight: 30 },
+    },
+  };
 
-  return { doc, data };
+  return { docDefinition, data };
 }
 
-function addQuestion(doc, question, answer, y) {
-  if (y > 260) {
-    doc.addPage();
-    y = 22;
-  }
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(20, 32, 51);
-  doc.setFontSize(10);
-  y = addWrappedText(doc, question, 14, y, 182, 5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(60, 73, 91);
-  y = addWrappedText(doc, answer || "Brak odpowiedzi", 18, y + 1, 174, 5);
-  return y + 4;
+async function getPdfBase64(docDefinition) {
+  return new Promise((resolve) => {
+    pdfMake.createPdf(docDefinition).getBase64(resolve);
+  });
 }
 
-function downloadPdf() {
+async function downloadPdf() {
   if (!validateForm()) return null;
-  const { doc, data } = buildPdf();
-  doc.save(getPdfFileName(data));
-  setMessage("PDF został wygenerowany i pobrany.", "success");
-  return { doc, data };
+  downloadPdfButton.disabled = true;
+  setMessage("Przygotowuję estetyczny PDF...", "");
+
+  try {
+    const { docDefinition, data } = await buildPdfDefinition();
+    pdfMake.createPdf(docDefinition).download(getPdfFileName(data));
+    setMessage("PDF został wygenerowany i pobrany.", "success");
+    return { docDefinition, data };
+  } catch (error) {
+    setMessage("Nie udało się wygenerować PDF. Spróbuj ponownie za chwilę.", "error");
+    return null;
+  } finally {
+    downloadPdfButton.disabled = false;
+  }
 }
 
 async function sendPdf() {
@@ -340,8 +440,8 @@ async function sendPdf() {
   setMessage("Przygotowuję PDF do wysyłki...", "");
 
   try {
-    const { doc, data } = buildPdf();
-    const pdfBase64 = doc.output("datauristring").split(",")[1];
+    const { docDefinition, data } = await buildPdfDefinition();
+    const pdfBase64 = await getPdfBase64(docDefinition);
     const response = await fetch(SEND_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
